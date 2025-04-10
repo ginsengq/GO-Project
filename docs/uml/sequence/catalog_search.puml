@@ -1,0 +1,17 @@
+@startuml
+
+title Поиск автомобилей в каталоге
+
+actor User as user
+participant "Car Handler" as handler
+participant "Car UseCase" as usecase
+participant "Car Repository" as repo
+
+user -> handler: GET /api/cars?brand=Toyota&min_price=10000
+handler -> usecase: SearchCars(brand, min_price)
+usecase -> repo: FindWithFilters(filters)
+repo --> usecase: List<Car>
+usecase --> handler: Paginated<Car>
+handler --> user: 200 OK\n{cars_list}
+
+@enduml

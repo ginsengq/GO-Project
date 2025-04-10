@@ -1,0 +1,92 @@
+@startuml
+
+enum CarStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+class User {
+    +int ID
+    +string Name 
+    +string Email
+    +string PasswordHash
+    +float Balance
+    +string Role 
+    +time.Time CreatedAt
+    +time.Time UpdatedAt
+}
+
+class Car {
+    +int64 ID 
+    +string Brand 
+    +string Model 
+    +string Year
+    +float64 Price 
+    +float64 Mileage 
+    +string Color 
+    +CarStatus Status 
+    +time.Time CreatedAt
+    +time.Time UpdatedAt
+}
+
+class Order {
+    +int ID 
+    +int UserID 
+    +int CarID 
+    +string Status 
+    +float64 Deposit 
+    +float64 TotalPrice
+    +time.Time CreatedAt
+    +time.Time UpdatedAt
+}
+
+class Reservation {
+    +int ID
+    +int UserID
+    +int CarID
+    +string Status
+    +time.Time CreatedAt
+    +time.Time ExpiresAt
+}
+
+class TestDrive {
+    +int ID
+    +int UserID
+    +int CarID
+    +time.Time Date
+    +string Status
+    +time.Time CreatedAt
+    +time.Time UpdatedAt
+}
+
+class Transaction {
+    +int ID
+    +int UserID
+    +float64 Amount
+    +string Type
+    +time.Time CreatedAt
+}
+
+User "1" --> "0..*" Order
+User "1" --> "0..*" Reservation
+User "1" --> "0..*" TestDrive
+User "1" --> "0..*" Transaction
+
+Car "1" --> "0..*" Order
+Car "1" --> "0..*" Reservation
+Car "1" --> "0..*" TestDrive
+
+Order "1" --> "1" Car
+Order "1" --> "1" User
+Order "1" --> "1..*" Transaction
+
+Reservation "1" --> "1" Car
+Reservation "1" --> "1" User
+
+TestDrive "1" --> "1" Car
+TestDrive "1" --> "1" User
+
+Transaction "1" --> "1" User
+
+@enduml

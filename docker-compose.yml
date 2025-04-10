@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .  
+      dockerfile: Dockerfile  
+    container_name: car_dealership_app
+    ports:
+      - "8000:8000" 
+    environment:
+      - DATABASE_URL=postgres://user:qwerty@dealership-db:5432/car_dealership?sslmode=disable  # Подключение к базе данных
+    depends_on:
+      - db  
+
+  db:
+    container_name: dealership-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: qwerty
+      POSTGRES_DB: car_dealership
+    ports:
+      - "5436:5432"  
+      - pg_data:/var/lib/postgresql/data  
+      
+volumes:
+  pg_data:
+    driver: local
+

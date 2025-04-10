@@ -1,0 +1,24 @@
+@startuml
+
+title Аутентификация пользователя
+
+actor User as user
+participant "Auth Handler" as handler
+participant "Auth UseCase" as usecase
+participant "User Repository" as repo
+
+user -> handler: POST /auth/sign-in\n{email, password}
+handler -> usecase: SignIn(email, password)
+usecase -> repo: GetByEmail(email)
+repo --> usecase: User
+usecase -> usecase: VerifyPassword(hash, password)
+alt Password is correct
+    usecase -> usecase: GenerateJWT(user)
+    usecase --> handler: JWT Token
+    handler --> user: 200 OK\n{token}
+else Password is incorrect
+    usecase --> handler: 401 Unauthorized\n{error: "Invalid password"}
+    handler --> user: 401 Unauthorized\n{error: "Invalid password"}
+end
+
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+
+title Бронирование автомобиля 
+
+actor User as user
+participant "Order Handler" as handler
+participant "Order UseCase" as usecase
+participant "Car Repository" as car_repo
+participant "Payment UseCase" as payment
+
+user -> handler: POST /api/orders\n{car_id, deposit}
+handler -> usecase: CreateOrder(user_id, car_id, deposit)
+usecase -> car_repo: GetByID(car_id)
+car_repo --> usecase: Car
+usecase -> payment: ProcessDeposit(user_id, deposit)
+payment --> usecase: TransactionID
+usecase -> usecase: CreateOrder(...)
+usecase --> handler: Order
+handler --> user: 201 Created\n{order_details}
+
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+
+title Запись на тест-драйв
+
+actor User as user
+participant "TestDrive Handler" as handler
+participant "TestDrive UseCase" as usecase
+participant "Car Repository" as car_repo
+
+user -> handler: POST /api/test-drives\n{car_id, date}
+handler -> usecase: Schedule(user_id, car_id, date)
+usecase -> car_repo: IsAvailable(car_id, date)
+car_repo --> usecase: true
+usecase -> usecase: CreateTestDrive(...)
+usecase --> handler: TestDrive
+handler --> user: 201 Created\n{testdrive_details}
+
+@enduml
