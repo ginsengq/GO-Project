@@ -67,3 +67,5 @@ go test ./...
 ## Author
 
 Galymzhankyzy Diana, 2025
+
+# GO-Project
