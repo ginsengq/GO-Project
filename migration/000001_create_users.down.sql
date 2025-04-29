@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS users;
+
+-- DROP TABLE IF EXISTS transactions;
+-- DROP TABLE IF EXISTS test_drives;
+-- DROP TABLE IF EXISTS orders;
+-- DROP TABLE IF EXISTS cars;
+-- DROP TABLE IF EXISTS users;
