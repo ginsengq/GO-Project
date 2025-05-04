@@ -1,0 +1,80 @@
+@startuml
+title Payment Processing System
+
+skinparam responseMessageBelowArrow true
+
+actor User as user
+participant "Payment Handler" as handler
+participant "Payment Service" as service
+participant "User Repository" as user_repo
+participant "Transaction Repository" as tx_repo
+participant "Stripe Gateway" as stripe
+database PostgreSQL as db
+
+' === Balance Deposit Process ===
+user -> handler: POST /api/payments/deposit\n{amount: 1000, card_token: "tok_visa"}
+activate handler
+
+handler -> service: Deposit(user_id, amount, token)
+activate service
+
+service -> stripe: CreateCharge(token, amount)
+activate stripe
+
+alt Successful payment
+    stripe --> service: PaymentSuccess(charge_id)
+    service -> user_repo: AddToBalance(user_id, amount)
+    user_repo -> db: UPDATE users SET balance = balance + amount\nWHERE id = user_id
+    db --> user_repo: OK
+    
+    service -> tx_repo: Create(user_id, amount, "deposit", charge_id)
+    tx_repo -> db: INSERT INTO transactions
+    db --> tx_repo: ID
+    
+    tx_repo --> service: Transaction
+    service --> handler: Transaction
+    handler --> user: 200 OK\n{"balance": 1500}
+else Payment failed
+    stripe --> service: PaymentError("Insufficient funds")
+    service --> handler: Error("Payment failed")
+    handler --> user: 402 Payment Required\n{"error": "Insufficient funds"}
+end
+
+deactivate stripe
+deactivate service
+deactivate handler
+
+' === Transaction Processing ===
+user -> handler: POST /api/payments/transaction\n{amount: 500, product_id: 123}
+activate handler
+
+handler -> service: CreateTransaction(user_id, amount, product_id)
+activate service
+
+service -> tx_repo: CreateTransaction(transaction)
+tx_repo -> db: INSERT INTO transactions
+db --> tx_repo: ID
+tx_repo --> service: Transaction
+
+alt Sufficient balance
+    service -> user_repo: CheckBalance(user_id)
+    user_repo -> db: SELECT balance FROM users\nWHERE id = user_id
+    db --> user_repo: 1000
+    
+    user_repo --> service: 1000
+    service -> user_repo: UpdateBalance(user_id, -amount)
+    user_repo -> db: UPDATE users SET balance = balance - amount\nWHERE id = user_id
+    db --> user_repo: OK
+    
+    user_repo --> service: OK
+    service --> handler: Transaction Complete
+    handler --> user: 200 OK\n{"status": "completed", "balance": 500}
+else Insufficient funds
+    user_repo --> service: 300
+    service --> handler: Error("Insufficient funds")
+    handler --> user: 402 Payment Required\n{"error": "Insufficient funds"}
+end
+
+deactivate service
+deactivate handler
+@enduml

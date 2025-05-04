@@ -1,0 +1,93 @@
+@startuml
+
+title Car Management System
+
+actor User as user
+
+  participant "Car Handler" as handler
+  participant "CarService" as service
+  participant "CarRepository" as repo
+  database "PostgreSQL" as db
+
+
+' Создание автомобиля
+user -> handler: POST /cars\n{car data}
+handler -> service: CreateCar(car)
+service -> service: validateCar(car)
+service -> repo: Create(car)
+repo -> db: INSERT INTO cars
+db --> repo: ID
+repo --> service: ID
+service -> repo: GetByID(ID)
+repo -> db: SELECT ... WHERE id=ID
+db --> repo: Car
+repo --> service: Car
+service --> handler: Car
+handler --> user: 201 Created\n{car}
+
+' Получение автомобиля
+user -> handler: GET /cars/{id}
+handler -> service: GetCar(id)
+service -> repo: GetByID(id)
+repo -> db: SELECT ... WHERE id=ID
+alt Car found
+  db --> repo: Car
+  repo --> service: Car
+  service --> handler: Car
+  handler --> user: 200 OK\n{car}
+else Car not found
+  db --> repo: Car  : // Changed from ErrNotFound to Car, added note
+  repo --> service: ErrNotFound
+  service --> handler: 404 Not Found\n{error}
+  handler --> user: 404 Not Found\n{error}
+end
+
+' Обновление автомобиля
+user -> handler: PATCH /cars/{id}\n{update fields}
+handler -> service: UpdateCar(id, update)
+service -> repo: Update(id, update)
+repo -> db: UPDATE cars SET ... WHERE id=ID
+db --> repo: OK
+repo --> service: OK
+service -> repo: GetByID(id)
+repo -> db: SELECT ... WHERE id=ID
+db --> repo: Car
+repo --> service: Car
+service --> handler: Car
+handler --> user: 200 OK\n{car}
+
+' Удаление автомобиля
+user -> handler: DELETE /cars/{id}
+handler -> service: DeleteCar(id)
+service -> repo: Delete(id)
+repo -> db: DELETE FROM cars WHERE id=ID
+db --> repo: OK
+repo --> service: OK
+service -> handler: OK
+handler --> user: 204 No Content
+
+' Список автомобилей
+user -> handler: GET /cars?filter=...
+handler -> service: ListCars(filter)
+service -> repo: List(filter)
+repo -> db: SELECT ... WHERE ...
+db --> repo: Cars[]
+repo --> service: Cars[]
+service --> handler: Cars[]
+handler --> user: 200 OK\n{items: cars, total: count}
+
+' Изменение статуса
+user -> handler: PATCH /cars/{id}/status\n{status}
+handler -> service: ChangeCarStatus(id, status)
+service -> repo: SetStatus(id, status)
+repo -> db: UPDATE cars SET status=... WHERE id=ID
+db --> repo: OK
+repo --> service: OK
+service -> repo: GetByID(id)
+repo -> db: SELECT ... WHERE id=ID
+db --> repo: Car
+repo --> service: Car
+service --> handler: Car
+handler --> user: 200 OK\n{car}
+
+@enduml

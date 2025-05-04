@@ -12,7 +12,7 @@ type Server struct {
 	logger     *log.Logger
 }
 
-func New(logger *log.Logger) *Server {
+func NewServer(logger *log.Logger) *Server {
 	return &Server{logger: logger}
 }
 

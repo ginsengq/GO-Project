@@ -1,0 +1,144 @@
+@startuml
+title User Management System
+
+actor User as user
+participant "User Handler" as handler
+participant "User UseCase" as usecase
+participant "User Repository" as repo
+database PostgreSQL as db
+
+' === Create User ===
+user -> handler: POST /users\n{name, email, password}
+activate handler
+
+handler -> usecase: Create(user)
+activate usecase
+
+usecase -> repo: GetByEmail(email)
+repo -> db: SELECT * FROM users WHERE email=?
+db --> repo: None
+repo --> usecase: None
+
+usecase -> usecase: Validate input
+usecase -> repo: Create(user)
+repo -> db: INSERT INTO users\n(name, email, password_hash)
+db --> repo: ID
+repo --> usecase: OK
+usecase --> handler: OK
+handler --> user: 201 Created
+
+deactivate usecase
+deactivate handler
+
+' === Get User By ID ===
+user -> handler: GET /users/{id}
+activate handler
+
+handler -> usecase: GetByID(id)
+activate usecase
+
+usecase -> repo: GetByID(id)
+repo -> db: SELECT * FROM users WHERE id=?
+alt User found
+    db --> repo: User
+    repo --> usecase: User
+    usecase --> handler: User
+    handler --> user: 200 OK\n{user}
+else User not found
+    db --> repo: None
+    repo --> usecase: ErrNotFound
+    usecase --> handler: ErrNotFound
+    handler --> user: 404 Not Found
+end
+
+deactivate usecase
+deactivate handler
+
+' === Update User ===
+user -> handler: PUT /users/{id}\n{user data}
+activate handler
+
+handler -> usecase: Update(user)
+activate usecase
+
+usecase -> repo: GetByID(id)
+repo -> db: SELECT * FROM users WHERE id=?
+db --> repo: User
+repo --> usecase: User
+
+usecase -> repo: Update(user)
+repo -> db: UPDATE users SET\nname=?, email=?\nWHERE id=?
+db --> repo: OK
+repo --> usecase: OK
+usecase --> handler: OK
+handler --> user: 200 OK
+
+deactivate usecase
+deactivate handler
+
+' === Delete User ===
+user -> handler: DELETE /users/{id}
+activate handler
+
+handler -> usecase: Delete(id)
+activate usecase
+
+usecase -> repo: Delete(id)
+repo -> db: DELETE FROM users WHERE id=?
+db --> repo: OK
+repo --> usecase: OK
+usecase --> handler: OK
+handler --> user: 204 No Content
+
+deactivate usecase
+deactivate handler
+
+' === List Users ===
+user -> handler: GET /users?limit=10&offset=0
+activate handler
+
+handler -> usecase: List(limit, offset)
+activate usecase
+
+usecase -> repo: List(limit, offset)
+repo -> db: SELECT * FROM users\nLIMIT ? OFFSET ?
+db --> repo: Users[]
+repo --> usecase: Users[]
+
+usecase -> repo: Count()
+repo -> db: SELECT COUNT(*) FROM users
+db --> repo: Count
+repo --> usecase: Count
+
+usecase --> handler: Users[], Count
+handler --> user: 200 OK\n{items: users, total: count}
+
+deactivate usecase
+deactivate handler
+
+' === Change Password ===
+user -> handler: PATCH /users/{id}/password\n{old, new}
+activate handler
+
+handler -> usecase: ChangePassword(id, old, new)
+activate usecase
+
+usecase -> repo: GetByID(id)
+repo -> db: SELECT * FROM users WHERE id=?
+db --> repo: User
+repo --> usecase: User
+
+usecase -> usecase: Verify old password\n(bcrypt compare)
+usecase -> usecase: Hash new password\n(bcrypt)
+
+usecase -> repo: Update(user)
+repo -> db: UPDATE users SET\npassword_hash=?\nWHERE id=?
+db --> repo: OK
+repo --> usecase: OK
+usecase --> handler: OK
+handler --> user: 200 OK
+
+deactivate usecase
+deactivate handler
+
+@enduml

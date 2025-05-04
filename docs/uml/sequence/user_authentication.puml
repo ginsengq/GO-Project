@@ -1,0 +1,45 @@
+@startuml
+
+title User Authentication and Registration
+
+actor User as user
+  participant "Auth Handler" as handler
+  participant "UserService" as service
+  participant "UserRepository" as repo
+  database "PostgreSQL" as db
+
+
+' Аутентификация
+user -> handler: POST /auth/sign-in\n{email, password}
+handler -> service: Authenticate(email, password)
+service -> repo: GetByEmail(email)
+repo --> service: User
+service -> service: bcrypt.CompareHashAndPassword()
+alt Password is correct
+    service -> service: GenerateJWT(user)
+    service --> handler: JWT Token, User
+    handler --> user: 200 OK\n{token}
+else Password is incorrect
+    service --> handler: 401 Unauthorized\n{error: "Invalid credentials"}
+    handler --> user: 401 Unauthorized\n{error: "Invalid credentials"}
+end
+
+' Регистрация
+user -> handler: POST /auth/sign-up\n{name, email, password}
+handler -> service: Create(user)
+service -> repo: GetByEmail(email)
+repo --> service: User exists?
+alt User exists
+    service --> handler: 400 Bad Request\n{error: "Email already exists"}
+    handler --> user: 400 Bad Request\n{error: "Email already exists"}
+else User doesn't exist
+    service -> service: bcrypt.GenerateFromPassword()
+    service -> repo: CreateUser(user)
+    repo -> db: INSERT INTO users
+    db --> repo: User
+    service -> service: GenerateJWT(user)
+    service --> handler: JWT Token, User
+    handler --> user: 201 Created\n{token}
+end
+
+@enduml

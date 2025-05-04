@@ -1,11 +1,18 @@
-package user
+package userrepo
 
-import "myproject/internal/entity"
+import (
+	"context"
+	"myproject/internal/entities"
+)
 
-type UserRepository interface {
-	Create(user entity.User) (int, error)
-	GetByEmail(email string) (*entity.User, error)
-	GetByID(id int) (*entity.User, error)
-	Update(user entity.User) error
-	Delete(id int) error
+type Repository interface {
+	Create(ctx context.Context, user *entities.User) error
+	GetByEmail(ctx context.Context, email string) (*entities.User, error)
+	GetByID(ctx context.Context, id int) (*entities.User, error)
+	Update(ctx context.Context, user *entities.User) error
+	UpdateBalance(ctx context.Context, id int, amount float64) error
+	Delete(ctx context.Context, id int) error
+	IsEmailExists(ctx context.Context, email string) (bool, error)
+	List(ctx context.Context, limit, offset int) ([]*entities.User, error) // Добавьте этот метод
+	Count(ctx context.Context) (int, error)                                // Добавьте этот метод
 }
